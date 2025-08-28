@@ -1,0 +1,13 @@
+# Sensei's Copilot — Test Generator (MVP)
+
+## Quick start
+```bash
+docker compose up --build
+# open http://localhost:5173
+
+2) **`.env.example` を追加**（後でGemini接続する前提）  
+```dotenv
+# copy to .env and fill
+GEMINI_API_KEY=
+API_BASE_URL=/api
+
