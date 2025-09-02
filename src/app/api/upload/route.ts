@@ -1,30 +1,21 @@
 export async function POST(req: Request): Promise<Response> {
     const form: FormData = await req.formData();
-    const single: FormDataEntryValue | null = form.get("file");
-    const primary: File | null = single instanceof File ? single : null;
+    const files: File[] = form.getAll("files").filter((v): v is File => v instanceof File);
 
-    const all: File[] = form.getAll("files").filter((v): v is File => v instanceof File);
 
-    console.log(
-        '[upload] primary:',
-        primary ? `${primary.name} (${primary.size} bytes)` : '(none)'
-    );
     console.log(
         '[upload] files:',
-        all.map((f) => `${f.name} (${f.size} bytes)`)
+        files.map((f) => `${f.name} (${f.size} bytes)`)
     );
 
-    if (!primary && all.length === 0) {
+    if (files.length === 0) {
         return Response.json(
-            {ok: false, error: 'fileもfilesも見つかりませんでした'},
+            {ok: false, error: 'filesが見つかりませんでした'},
             {status: 400}
         );
     }
-    const primaryMeta = primary 
-        ? {name: primary.name, size: primary.size, type: primary.type}
-        : null;
     
-    const filesMeta = (primary ? [primary, ...all] : all).map((f) => ({
+    const filesMeta: Array<{name: string, size: number, type: string}> = files.map((f) => ({
         name: f.name,
         size: f.size,
         type: f.type
@@ -32,7 +23,6 @@ export async function POST(req: Request): Promise<Response> {
 
     return Response.json({
         ok: true,
-        ...(primaryMeta ?? {}),
         files: filesMeta,
         count: filesMeta.length,
     });

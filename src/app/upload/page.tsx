@@ -8,15 +8,17 @@ export default function UploadPage() {
     const [files, setFiles] = useState<File[]>([]);
     const [isUploading, setIsUploading] = useState<boolean>(false);
     useEffect(
-        () => { console.log("ファイルが変更された：", files[0]?.name ?? "（なし）") },
+        () => { console.log("ファイルの変更") },
         [files]
     );
 
     async function handleUpload(files: File[]) {
         setIsUploading(true);
-        if (files.length === 0) return;
+        if (files.length === 0) {
+            alert("ファイルが選択されていません");
+            return;
+        }
         const fd = new FormData();
-        fd.append("file", files[0]);
         for (const f of files) {
             fd.append("files", f);
         }
@@ -40,15 +42,14 @@ export default function UploadPage() {
 
             if (data.ok) {
                 const list: Array<{name: string, size: number, type: string}> = data.files;
-                if (Array.isArray(list) && list.length > 0) {
-                    const preview = list.slice(0, 5).map((f, i) => `${i + 1}. ${f.name} (${f.size} bytes)`).join('\n');
-                    alert(`アップロード成功！\ncount: ${data.count ?? list.length}\n---\n${preview}${list.length > 5 ? '\n(他 あり → Console 参照)' : ''}`);
+                if (list.length > 0) {
+                    alert(`アップロード成功！`);
                     console.log('全ファイルの結果:', list);
                 } else {
-                    alert(`アップロード成功！（互換）\nname: ${data.name}\nsize: ${data.size} bytes\ntype: ${data.type}`);
+                    console.log(`不明なエラー：filesが空です`)
                 }
             } else {
-                alert(`アップロードに失敗しました：${data.error ?? '不明なエラー'}`);
+                console.log(`アップロードに失敗しました：${data.error ?? '不明なエラー'}`);
             }
         } catch (err) {
             console.error("例外が発生しました:", err);
@@ -69,11 +70,7 @@ export default function UploadPage() {
                     const list: FileList | null = e.target.files;
                     const arr: File[] = list ? Array.from(list) : [];
                     setFiles(arr);
-
                     console.log("選択されたファイル数: ", arr.length);
-                    if (arr[0]) {
-                        console.log("代表ファイル: ", arr[0].name, arr[0].size, "bytes", arr[0].type);
-                    }
                 }}
             />
             <button
