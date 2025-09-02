@@ -39,13 +39,16 @@ export default function UploadPage() {
             const data = await res.json();
 
             if (data.ok) {
-                alert(`アップロード成功！\nname: ${data.name}\nsize: ${data.size} bytes\ntype: ${data.type}`);
-                console.log('サーバーからの返事:', data);
-
+                const list: Array<{name: string, size: number, type: string}> = data.files;
+                if (Array.isArray(list) && list.length > 0) {
+                    const preview = list.slice(0, 5).map((f, i) => `${i + 1}. ${f.name} (${f.size} bytes)`).join('\n');
+                    alert(`アップロード成功！\ncount: ${data.count ?? list.length}\n---\n${preview}${list.length > 5 ? '\n(他 あり → Console 参照)' : ''}`);
+                    console.log('全ファイルの結果:', list);
+                } else {
+                    alert(`アップロード成功！（互換）\nname: ${data.name}\nsize: ${data.size} bytes\ntype: ${data.type}`);
+                }
             } else {
-                const msg = data.error ?? '不明なエラー';
-                alert(`アップロードに失敗しました：${msg}`);
-                console.warn('サーバーからのエラー:', data);
+                alert(`アップロードに失敗しました：${data.error ?? '不明なエラー'}`);
             }
         } catch (err) {
             console.error("例外が発生しました:", err);
