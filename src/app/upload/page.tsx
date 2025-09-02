@@ -5,46 +5,83 @@ import { useState, useEffect } from "react";
 
 
 export default function UploadPage() {
-    const [file, setFile] = useState<File | null>(null);
+    const [files, setFiles] = useState<File[]>([]);
+    const [isUploading, setIsUploading] = useState<boolean>(false);
     useEffect(
-        () => {console.log("ファイルが変更された：", file?.name ?? "（なし）")},
-        [file]
+        () => { console.log("ファイルが変更された：", files[0]?.name ?? "（なし）") },
+        [files]
     );
 
-    
-    return (
-        <div>
-            <input 
-            className="border border-gray-300 hover:bg-gray-100 transition p-1"
-            type="file"
-            onChange={(e)=>{
-                const f = e.target.files?.[0] ?? null;
-                setFile(f);}}
-             />
-             <button
-             className="bg-gray-100 hover:bg-gray-200 active:bg-gray-300 disabled:bg-gray-400 ml-4 border border-gray-300 transition p-1 rounded-md"
-             disabled={file == null}
-             onClick={()=>{
-                if (!file) return;
-                handleMakeFormData(file);
-                alert(`FormDataに詰めました: ${file.name}`);
-             }}>
-                アップロード
-             </button>
-        </div>
-    );
-}
+    async function handleUpload(files: File[]) {
+        setIsUploading(true);
+        if (files.length === 0) return;
+        const fd = new FormData();
+        fd.append("file", files[0]);
+        for (const f of files) {
+            fd.append("files", f);
+        }
+        //fetchでPOSTリクエストを送る
+        try {
+            const res = await fetch(
+                "/api/upload",
+                {
+                    method: "POST",
+                    body: fd,
+                }
+            );
 
-function handleMakeFormData(file: File) {
-    const fd = new FormData();
-    fd.append("file", file);
+            if (!res.ok) {
+                console.error("HTTPエラー status: ", res.status);
+                alert(`アップロードに失敗しました (HTTP ${res.status})`);
+                return;
+            }
 
-    //中身を確認用にログ（実運用では不要）
-    for (const [key, value] of fd.entries()) {
-        if (value instanceof File) {
-            console.log('FormData:', key, value.name, value.size, 'bytes');
-        } else {
-            console.log('FormData:', key, value);
+            const data = await res.json();
+
+            if (data.ok) {
+                alert(`アップロード成功！\nname: ${data.name}\nsize: ${data.size} bytes\ntype: ${data.type}`);
+                console.log('サーバーからの返事:', data);
+
+            } else {
+                const msg = data.error ?? '不明なエラー';
+                alert(`アップロードに失敗しました：${msg}`);
+                console.warn('サーバーからのエラー:', data);
+            }
+        } catch (err) {
+            console.error("例外が発生しました:", err);
+            alert("アップロード中にエラーが発生しました（ネットワーク/例外）");
+        } finally {
+            setIsUploading(false);
         }
     }
+
+
+    return (
+        <div>
+            <input
+                className="border border-gray-300 hover:bg-gray-100 transition p-1"
+                type="file"
+                multiple
+                onChange={(e) => {
+                    const list: FileList | null = e.target.files;
+                    const arr: File[] = list ? Array.from(list) : [];
+                    setFiles(arr);
+
+                    console.log("選択されたファイル数: ", arr.length);
+                    if (arr[0]) {
+                        console.log("代表ファイル: ", arr[0].name, arr[0].size, "bytes", arr[0].type);
+                    }
+                }}
+            />
+            <button
+                className="bg-gray-100 hover:bg-gray-200 active:bg-gray-300 disabled:bg-gray-400 ml-4 border border-gray-300 transition p-1 rounded-md"
+                disabled={files.length === 0 || isUploading}
+                onClick={() => {
+                    if (files.length === 0) return;
+                    handleUpload(files);
+                }}>
+                {isUploading ? "アップロード中..." : "アップロード"}
+            </button>
+        </div>
+    );
 }
