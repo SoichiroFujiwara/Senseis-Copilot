@@ -66,6 +66,7 @@ export default function UploadPage() {
                 className="border border-gray-300 hover:bg-gray-100 transition p-1"
                 type="file"
                 multiple
+                accept=".pdf"
                 onChange={(e) => {
                     const list: FileList | null = e.target.files;
                     const arr: File[] = list ? Array.from(list) : [];

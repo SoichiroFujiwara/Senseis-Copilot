@@ -1,0 +1,68 @@
+{
+    "type": "object",
+    "properties": {
+        "results": {
+            "type": "object",
+            "properties": {
+                "scores": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "viewpoint_id": {
+                                "type": "integer",
+                                "minimum": 1
+                            },
+                            "score": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 100
+                            },
+                            "reason": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "viewpoint_id",
+                            "score",
+                            "reason"
+                        ]
+                    }
+                },
+                "overall_description": {
+                    "type": "string"
+                }
+            },
+            
+            "required": [
+                    "overall_description",
+                    "scores"
+                ]
+        },
+        "errors": {
+            "type": "object",
+            "properties": {
+                "tags": {
+                    "type": "string",
+                    "enum": [
+                        "irrelevant_content",
+                        "unrecognized_content",
+                        "unable_to_load_file",
+                        "lacking_content",
+                        "others"
+                    ]
+                },
+                "description": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "tags",
+                "description"
+            ]
+        }
+    },
+    "required": [
+        "results"
+    ]
+}

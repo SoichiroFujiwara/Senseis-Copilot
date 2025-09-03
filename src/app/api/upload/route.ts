@@ -1,7 +1,28 @@
+import { mkdir, writeFile } from 'fs/promises';
+import path from 'path';
+
 export async function POST(req: Request): Promise<Response> {
+    console.log("アップロード開始");
     const form: FormData = await req.formData();
     const files: File[] = form.getAll("files").filter((v): v is File => v instanceof File);
+    const uploadDir = path.join(process.cwd(), 'upload', 'raw');
+    await mkdir(uploadDir, { recursive: true });
 
+    try {
+        for (const file of files) {
+            const safeName = file.name.replace(/[\/\\]/g, '_');
+            const filePath = path.join(uploadDir, safeName);
+            const arrayBuffer = await file.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            await writeFile(filePath, buffer);
+        }
+    } catch (err) {
+        console.error('[upload] ファイルの保存に失敗しました', err);
+        return Response.json(
+            { ok: false, error: 'ファイルの保存に失敗しました' },
+            { status: 500 }
+        );
+    }
 
     console.log(
         '[upload] files:',
@@ -10,12 +31,12 @@ export async function POST(req: Request): Promise<Response> {
 
     if (files.length === 0) {
         return Response.json(
-            {ok: false, error: 'filesが見つかりませんでした'},
-            {status: 400}
+            { ok: false, error: 'filesが見つかりませんでした' },
+            { status: 400 }
         );
     }
-    
-    const filesMeta: Array<{name: string, size: number, type: string}> = files.map((f) => ({
+
+    const filesMeta: Array<{ name: string, size: number, type: string }> = files.map((f) => ({
         name: f.name,
         size: f.size,
         type: f.type
@@ -26,6 +47,4 @@ export async function POST(req: Request): Promise<Response> {
         files: filesMeta,
         count: filesMeta.length,
     });
-
-
 }
