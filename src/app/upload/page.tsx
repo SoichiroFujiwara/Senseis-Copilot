@@ -4,13 +4,30 @@ import { useState, useEffect } from "react";
 
 
 
+
 export default function UploadPage() {
     const [files, setFiles] = useState<File[]>([]);
     const [isUploading, setIsUploading] = useState<boolean>(false);
+    const [uploadedFiles, setUploadedFiles] = useState<Array<{filename: string, size: number}>>([]);
     useEffect(
         () => { console.log("ファイルの変更") },
         [files]
     );
+    useEffect(
+        () => { fetchUploadedFiles() },
+        []
+    );
+
+    async function fetchUploadedFiles() {
+        const res = await fetch(
+            "/api/upload",
+            {
+                method: "GET",
+            }
+        );
+        const data = await res.json();
+        setUploadedFiles(data);
+    }
 
     async function handleUpload(files: File[]) {
         setIsUploading(true);
@@ -56,6 +73,7 @@ export default function UploadPage() {
             alert("アップロード中にエラーが発生しました（ネットワーク/例外）");
         } finally {
             setIsUploading(false);
+            fetchUploadedFiles();
         }
     }
 
@@ -83,6 +101,25 @@ export default function UploadPage() {
                 }}>
                 {isUploading ? "アップロード中..." : "アップロード"}
             </button>
+
+            <div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ファイル名</th>
+                            <th>サイズ(MB)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {uploadedFiles.map((file) => (
+                            <tr key={file.filename}>
+                                <td>{file.filename}</td>
+                                <td>{(file.size / 1024 / 1024).toFixed(1)}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }
