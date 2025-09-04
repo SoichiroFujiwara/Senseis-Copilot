@@ -104,8 +104,15 @@ export default function Rubric() {
                                 <td>
                                     <input type="number"
                                         placeholder="点数"
+                                        min="0"
+                                        max="100"
+                                        step="1"
                                         value={v.score}
                                         onChange={(e) => {
+                                            if (isNaN(parseInt(e.target.value)) || parseInt(e.target.value) < 0 || parseInt(e.target.value) > 100) {
+                                                alert("点数は0~100の間で入力してください");
+                                                return;
+                                            }
                                             setViewpoints(viewpoints.map((v, j) => j === i ? { ...v, score: parseInt(e.target.value) } : v));
                                         }} />
                                 </td>

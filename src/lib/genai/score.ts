@@ -5,30 +5,37 @@ import schema from "../../../data/scoring/schema.json";
 
 export type Model = "gemini-2.5-pro" | "gemini-2.5-flash"
 
-async function buildPrompt({
-    templatePath,
-    rubricPath,
-  }: {
-    templatePath: string;
-    rubricPath: string;
-  }) {
+const RubricJsonPath = path.join(process.cwd(), "data", "rubric", "rubric.json");
+const PromptPath = path.join(process.cwd(), "data", "scoring", "prompt.txt");
+
+export type ScoreResponse = {
+    results: {
+        scores: Array<{ viewpoint_id: number, score: number, reason: string }>,
+        overall_description: string,
+    },
+    errors: { tags: string, description: string },
+}
+
+async function buildPrompt() {
     const [template, rubric] = await Promise.all([
-      readFile(templatePath, "utf-8"),
-      readFile(rubricPath, "utf-8"),
+        readFile(PromptPath, "utf-8"),
+        getRubricTxt(),
     ]);
-  
+
     // {rubric} を rubric.txt の中身で置換（複数あっても全部）
     const prompt = template.replace(/\{rubric\}/g, rubric.trim());
     return prompt;
-  }
+}
 
-export async function score(filenames: string[], model: Model): Promise<Array<{filename: string, response: GenerateContentResponse | null}> | null> {
-    const promptPath = path.join(process.cwd(), "data", "scoring", "prompt.txt");
-    const rubricPath = path.join(process.cwd(), "data", "scoring", "rubric.txt");
-    const prompt = await buildPrompt({
-        templatePath: promptPath,
-        rubricPath: rubricPath,
-    });
+async function getRubricTxt() {
+    const rubric = await readFile(RubricJsonPath, "utf-8");
+    const rubricObj = JSON.parse(rubric);
+    const rubricTxt = rubricObj.map((item: { name: string, description: string, score: number }, index: number) => `${index + 1} ${item.name}: ${item.description}`).join("\n");
+    return rubricTxt;
+}
+
+export async function score(filenames: string[], model: Model): Promise<Array<{ filename: string, response: ScoreResponse | null }> | null> {
+    const prompt = await buildPrompt();
     console.log(prompt);
 
     if (!process.env.GEMINI_API_KEY) {
@@ -45,10 +52,10 @@ export async function score(filenames: string[], model: Model): Promise<Array<{f
         });
         files.push(file);
     }
-    const responses: Array<GenerateContentResponse | null> = [];
-    
+    const responses: Array<ScoreResponse | null> = [];
+
     for (const file of files) {
-        if (typeof file.uri === "string" && typeof file.mimeType === "string")  {
+        if (typeof file.uri === "string" && typeof file.mimeType === "string") {
             const response = await ai.models.generateContent({
                 model: model,
                 contents: createUserContent([
@@ -60,7 +67,7 @@ export async function score(filenames: string[], model: Model): Promise<Array<{f
                     responseSchema: schema,
                 }
             });
-            responses.push(response);
+            responses.push(JSON.parse(response.text ?? "{}"));
         } else {
             responses.push(null);
         }
@@ -69,7 +76,7 @@ export async function score(filenames: string[], model: Model): Promise<Array<{f
         filename: filename,
         response: responses[index],
     }));
-    
+
     return results;
 }
-    
+

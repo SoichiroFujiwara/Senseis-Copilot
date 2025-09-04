@@ -3,12 +3,33 @@
 import {glob} from "glob";
 import path from "path";
 import {score} from "@/lib/genai/score";
-import { useState } from "react";
-import { GenerateContentResponse } from "@google/genai";
+import { useState, useEffect } from "react";
+import { ScoreResponse } from "@/lib/genai/score";
 
 export default function ResultPage() {
-    const [result, setResult] = useState<Array<{filename: string, response: GenerateContentResponse | null}> | null>(null);
+    const [result, setResult] = useState<Array<{filename: string, response: ScoreResponse | null}> | null>(null);
+    const [viewpoints, setViewpoints] = useState<Array<{name: string, description: string, score: number}>>([]);
+    useEffect(() => {
+        const fetchViewpoints = async () => {
+            const res = await fetch("/api/rubric", {
+                method: "GET",
+            });
+            const data = await res.json();
+            setViewpoints(data);
+        };
+        fetchViewpoints();
+    }, []);
 
+    function getTotalScore(scoresobj: Array<{viewpoint_id: number, score: number, reason: string}>) {
+        const weights = getWeights(viewpoints);
+        const scores = scoresobj.map((s) => s.score);
+        return weights.reduce((acc, weight, index) => acc + weight * scores[index], 0);
+    }
+    function getWeights(viewpoints: Array<{name: string, description: string, score: number}>) {
+        return viewpoints.map((v) => v.score / 100);
+    }
+
+ 
     async function handleScore() {
         const res = await fetch(
             "/api/result",
@@ -35,6 +56,26 @@ export default function ResultPage() {
             >
                 採点する
             </button>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ファイル名</th>
+                        <th>総合得点</th>
+                        <th>総括</th>
+                        <th>要確認</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {result?.map((r, i) => (
+                        <tr key={r.filename}>
+                            <td>{r.filename}</td>
+                            <td>{getTotalScore(r.response?.results?.scores ?? [])}</td>
+                            <td>{r.response?.results?.overall_description}</td>
+                            <td>{r.response?.errors ? "〇" : ""}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
         </div>
     );
 }

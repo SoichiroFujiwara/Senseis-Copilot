@@ -1,1 +1,1 @@
-[{"name":"foo","description":"hoge","score":200},{"name":"bar","description":"hogehoge","score":-100}]
+[{"name":"独創性","description":"自分なりの工夫や新しい視点があるかどうか。","score":25},{"name":"調査・実験の工夫","description":"調査方法や実験手順が適切かつ工夫されているか。","score":25},{"name":"まとめ方","description":"研究の内容をわかりやすく整理し、図や表などで工夫しているか。","score":25},{"name":"考察・振り返り","description":"結果からしっかり考察し、自分の意見や学びを述べているか。","score":25}]
